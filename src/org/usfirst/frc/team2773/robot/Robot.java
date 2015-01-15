@@ -4,6 +4,7 @@ package org.usfirst.frc.team2773.robot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Solenoid;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -19,12 +20,13 @@ public class Robot extends IterativeRobot {
      */
 	RobotDrive drive;
 	Joystick drivingStick;
+	Solenoid toteGrabber;
 	
     public void robotInit() {
     	
     	drive = new RobotDrive(0, 1, 2, 3);
     	drivingStick = new Joystick(0);
-    	
+    	toteGrabber = new Solenoid(0);
 
     }
 
@@ -74,6 +76,13 @@ public class Robot extends IterativeRobot {
      */
     public void teleopPeriodic() {
     	drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(), drivingStick.getZ(), 0);
+    	if(drivingStick.getTrigger())
+    	{
+    		toteGrabber.set(true);
+    		//grab tote
+    	}
+    	else
+    		toteGrabber.set(false);
     }
     
     /**
@@ -87,10 +96,17 @@ public class Robot extends IterativeRobot {
      * This function is used to retrieve a tote and activate the elevator system
      */
     public void grabTote(){
-        //actuate piston
+        toteGrabber.set(true);
         //grab tote
-        //reverse piston
+        try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        toteGrabber.set(false);
         //release tote
+        //elevate tote
     }
 
     /**
