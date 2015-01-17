@@ -1,6 +1,3 @@
-//Contributors:
-//Darren Midkiff
-//Zane Fry
 
 package org.usfirst.frc.team2773.robot;
 
@@ -17,6 +14,7 @@ import edu.wpi.first.wpilibj.Solenoid;
  * directory.
  * @author Darren Midkiff
  * @author Luke Senseney
+ * @author Zane Fry
  */
 public class Robot extends IterativeRobot {
 	RobotDrive drive;
