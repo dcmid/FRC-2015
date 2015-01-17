@@ -15,28 +15,28 @@ import edu.wpi.first.wpilibj.Solenoid;
  * documentation. If you change the name of this class or the package after
  * creating this project, you must also update the manifest file in the resource
  * directory.
+ * @author Darren Midkiff
+ * @author Luke Senseney
  */
 public class Robot extends IterativeRobot {
-    /**
-     * This function is run when the robot is first started up and should be
-     * used for any initialization code.
-     */
 	RobotDrive drive;
 	Joystick drivingStick;
 	Solenoid toteGrabber;
 	
-    public void robotInit() {
-    	
+    /**
+     * This function is run when the robot is first started up and should be
+     * used for any initialization code.
+     */
+    @Override public void robotInit() {
     	drive = new RobotDrive(0, 1, 2, 3);
     	drivingStick = new Joystick(0);
     	toteGrabber = new Solenoid(0);
-
     }
 
     /**
      * This function is called periodically during autonomous
      */
-    public void autonomousPeriodic() {
+    @Override public void autonomousPeriodic() {
         //Grabs first and second tote, then moves to third tote position
         for(int i=0; i<2; i++){    
             grabTote();
@@ -44,7 +44,6 @@ public class Robot extends IterativeRobot {
             try {
 				Thread.sleep(3000);
 			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
             drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
@@ -52,7 +51,6 @@ public class Robot extends IterativeRobot {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
             drive.mecanumDrive_Cartesian(0, 0, 0, 0);
@@ -63,27 +61,22 @@ public class Robot extends IterativeRobot {
         try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
         drive.mecanumDrive_Cartesian(0, 0, 0, 0);
         /*
-        Unload tote code to be written
+        TODO Unload tote code to be written
         */
-
-
     }
 
     /**
      * This function is called periodically during operator control
      */
-    public void teleopPeriodic() {
+    @Override public void teleopPeriodic() {
     	drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(), drivingStick.getZ(), 0);
     	if(drivingStick.getTrigger())
-    	{
     		toteGrabber.set(true);
     		//grab tote
-    	}
     	else
     		toteGrabber.set(false);
     }
@@ -91,8 +84,7 @@ public class Robot extends IterativeRobot {
     /**
      * This function is called periodically during test mode
      */
-    public void testPeriodic() {
-    
+    @Override public void testPeriodic() {
     }
     
     /**
