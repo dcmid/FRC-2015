@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Solenoid;
  * @author Luke Senseney
  * @author Zane Fry
  * @author Stephen Paredes
+ * @author Peter Senseney
  */
 public class Robot extends IterativeRobot {
 	RobotDrive drive;
