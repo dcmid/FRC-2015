@@ -1,4 +1,3 @@
-
 package org.usfirst.frc.team2773.robot;
 
 import edu.wpi.first.wpilibj.Joystick;
@@ -12,62 +11,64 @@ import edu.wpi.first.wpilibj.Solenoid;
  * documentation. If you change the name of this class or the package after
  * creating this project, you must also update the manifest file in the resource
  * directory.
+ * 
+ * @author Darren Midkiff
+ * @author Luke Senseney
+ * @author Zane Fry
+ * @author Stephen Paredes
+ * @author Peter Senseney
+ * @author Kate Kersgieter
  */
 public class Robot extends IterativeRobot {
-    /**
-     * This function is run when the robot is first started up and should be
-     * used for any initialization code.
-     */
 	RobotDrive drive;
 	Joystick drivingStick;
 	Solenoid toteGrabber;
-	
-    public void robotInit() {
-    	
-    	drive = new RobotDrive(0, 1, 2, 3);
-    	drivingStick = new Joystick(0);
-    	toteGrabber = new Solenoid(0);
 
-    }
+	/**
+	 * This function is run when the robot is first started up and should be
+	 * used for any initialization code.
+	 */
+	@Override public void robotInit() {
+		drive = new RobotDrive(0, 1, 2, 3);
+		drivingStick = new Joystick(0);
+		toteGrabber = new Solenoid(0);
+	}
 
-    /**
-     * This function is called periodically during autonomous
-     */
-    public void autonomousPeriodic() {
-        //Grabs first and second tote, then moves to third tote position
-        for(int i=0; i<2; i++){    
-            grabTote();
-            drive.mecanumDrive_Cartesian(1, 0, 0, 0);
-            try {
+	/**
+	 * This function is called periodically during autonomous
+	 */
+	@Override public void autonomousPeriodic() {
+		// Grabs first and second tote, then moves to third tote position
+		for (int i = 0; i < 2; i++) {
+			grabTote();
+			drive.mecanumDrive_Cartesian(1, 0, 0, 0);
+			try {
 				Thread.sleep(3000);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
-            drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
-            while(!seesTote())
+			drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
+			while (!seesTote())
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-            drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-        }
-        //Grabs third tote and drives into auto zone
-        grabTote();
-        drive.mecanumDrive_Cartesian(0, -1, 0, 0);
-        try {
+			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+		}
+		// Grabs third tote and drives into auto zone
+		grabTote();
+		drive.mecanumDrive_Cartesian(0, -1, 0, 0);
+		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-        drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-        /*
-        Unload tote code to be written
-        */
-
-
-    }
-
+		drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+		/*
+		 * TODO Unload tote code to be written
+		 */
+	}
     /**
      * This function is called periodically during operator control
      */
