@@ -41,7 +41,6 @@ public class Robot extends IterativeRobot {
             try {
 				Thread.sleep(3000);
 			} catch (InterruptedException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
             drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
@@ -49,7 +48,6 @@ public class Robot extends IterativeRobot {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
             drive.mecanumDrive_Cartesian(0, 0, 0, 0);
@@ -60,7 +58,6 @@ public class Robot extends IterativeRobot {
         try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
         drive.mecanumDrive_Cartesian(0, 0, 0, 0);
@@ -75,7 +72,12 @@ public class Robot extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-    	drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(), drivingStick.getZ(), 0);
+    	if(drivingStick.getRawButton(3))
+    		drive.mecanumDrive_Cartesian(-.25, 0, 0, 0);
+    	else if(drivingStick.getRawButton(4))
+    		drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
+    	else
+    		drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(), drivingStick.getZ()*.25,0);
     	if(drivingStick.getTrigger())
     	{
     		toteGrabber.set(true);
