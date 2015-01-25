@@ -123,14 +123,15 @@ public class Robot extends IterativeRobot {
 		}
 		toteGrabber.set(false);
 		// release tote
+		// elevate tote
 	}
 
-	/**
-	 * This function uses vision magic to check for a tote in front of the robot
-	 */
-	public boolean seesTote() {
-		// vision magic
-		return true;
-	}
-
+    /**
+    *  This function uses vision magic to check for a tote in front of the robot
+    */
+    public boolean seesTote(){
+        //vision magic
+        return true;
+    }
+    
 }
