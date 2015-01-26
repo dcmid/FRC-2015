@@ -1,9 +1,11 @@
 package org.usfirst.frc.team2773.robot;
 
+import edu.wpi.first.wpilibj.Jaguar;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Timer;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -23,6 +25,9 @@ public class Robot extends IterativeRobot {
 	RobotDrive drive;
 	Joystick drivingStick;
 	Solenoid toteGrabber;
+	Jaguar elevator;
+	Timer timer;
+	double stopTime=0.0;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -32,6 +37,8 @@ public class Robot extends IterativeRobot {
 		drive = new RobotDrive(0, 1, 2, 3);
 		drivingStick = new Joystick(0);
 		toteGrabber = new Solenoid(0);
+		elevator = new Jaguar(4);
+		timer = new Timer();
 	}
 
 	/**
@@ -69,48 +76,55 @@ public class Robot extends IterativeRobot {
 		 * TODO Unload tote code to be written
 		 */
 	}
-    /**
-     * This function is called periodically during operator control
-     */
-    public void teleopPeriodic() {
-    	if(drivingStick.getRawButton(3))
-    		drive.mecanumDrive_Cartesian(-.25, 0, 0, 0);
-    	else if(drivingStick.getRawButton(4))
-    		drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
-    	else
-    		drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(), drivingStick.getZ()*.25,0);
-    	if(drivingStick.getTrigger())
-    	{
-    		toteGrabber.set(true);
-    		//grab tote
-    	}
-    	else
-    		toteGrabber.set(false);
-    }
-    
-    /**
-     * This function is called periodically during test mode
-     */
-    public void testPeriodic() {
-    
-    }
-    
-    /**
-     * This function is used to retrieve a tote and activate the elevator system
-     */
-    public void grabTote(){
-        toteGrabber.set(true);
-        //grab tote
-        try {
+
+	/**
+	 * This function is called periodically during operator control
+	 */
+	@Override public void teleopPeriodic() {
+		drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(),
+				drivingStick.getZ(), 0);
+		if (drivingStick.getTrigger())
+			toteGrabber.set(true);
+		// grab tote
+		else
+			toteGrabber.set(false);
+		if(drivingStick.getRawButton(2))
+		{
+			elevator.set(1);
+			stopTime +=2;
+			timer.start();
+		}
+		if(timer.get()>stopTime)
+		{
+			timer.stop();
+			elevator.set(0);
+			timer.reset();
+			stopTime = 0;
+		}
+	}
+
+	/**
+	 * This function is called periodically during test mode
+	 */
+	@Override public void testPeriodic() {
+	}
+
+	/**
+	 * This function is used to retrieve a tote and activate the elevator system
+	 */
+	public void grabTote() {
+		toteGrabber.set(true);
+		// grab tote
+		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        toteGrabber.set(false);
-        //release tote
-        //elevate tote
-    }
+		toteGrabber.set(false);
+		// release tote
+		// elevate tote
+	}
 
     /**
     *  This function uses vision magic to check for a tote in front of the robot
