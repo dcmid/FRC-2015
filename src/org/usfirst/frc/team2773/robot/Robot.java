@@ -1,11 +1,15 @@
 package org.usfirst.frc.team2773.robot;
 
+import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Jaguar;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -24,9 +28,10 @@ import edu.wpi.first.wpilibj.Timer;
 public class Robot extends IterativeRobot {
 	RobotDrive drive;
 	Joystick drivingStick;
-	Solenoid toteGrabber;
 	Jaguar elevator;
 	Timer timer;
+	DigitalInput leftIR,rightIR;
+	AnalogInput limit, sonar, encoder;
 	double stopTime=0.0;
 
 	/**
@@ -36,58 +41,106 @@ public class Robot extends IterativeRobot {
 	@Override public void robotInit() {
 		drive = new RobotDrive(0, 1, 2, 3);
 		drivingStick = new Joystick(0);
-		toteGrabber = new Solenoid(0);
 		elevator = new Jaguar(4);
+		rightIR=new DigitalInput(1);
+		leftIR=new DigitalInput(0);
 		timer = new Timer();
+		limit=new AnalogInput(2);
+		encoder=new AnalogInput(1);
+		sonar=new AnalogInput(0);
+	}
+	
+	@Override public void autonomousInit()
+	{
+		drive.setSafetyEnabled(false);
 	}
 
 	/**
 	 * This function is called periodically during autonomous
 	 */
 	@Override public void autonomousPeriodic() {
+		try{
 		// Grabs first and second tote, then moves to third tote position
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 1; i++) {
+
+			SmartDashboard.putString("Autonomous State:", "grabbing tote");
 			grabTote();
-			drive.mecanumDrive_Cartesian(1, 0, 0, 0);
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
-			drive.mecanumDrive_Cartesian(.25, 0, 0, 0);
-			while (!seesTote())
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			drive.mecanumDrive_Cartesian(0, 0, 0, 0);
+			SmartDashboard.putString("Autonomous State:", "//drive back");
+			driveTest(0,-.25,0,0);
+			Timer.delay(1);
+			SmartDashboard.putString("Autonomous State:", "//drive right");
+			driveTest(.5, 0, 0, 0);
+			Timer.delay(1);
+			SmartDashboard.putString("Autonomous State:", "//drive right quarter speed until rightIR");
+			driveTest(.25, 0, 0, 0);
+			while(rightIR.get());
+			SmartDashboard.putString("Autonomous State:", "//drives forward until limit pushed");
+			driveTest(0,.175, 0, 0);
+			while(limit.getValue()<2000);
+			SmartDashboard.putString("Autonomous State:", "line up");
+			while(!lineUp(0));
+			driveTest(0, 0, 0, 0);
 		}
 		// Grabs third tote and drives into auto zone
 		grabTote();
-		drive.mecanumDrive_Cartesian(0, -1, 0, 0);
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
+		driveTest(0, -1, 0, 0);
+		//Timer.delay(3);
+		driveTest(0, 0, 0, 0);
+		elevator.set(-1);
+		Timer.delay(6);
+		}catch(InterruptedException e)
+		{
 			e.printStackTrace();
 		}
-		drive.mecanumDrive_Cartesian(0, 0, 0, 0);
-		/*
-		 * TODO Unload tote code to be written
-		 */
+	}
+	
+	@Override public void teleopInit()
+	{
+		drive.setSafetyEnabled(false);
 	}
 
 	/**
 	 * This function is called periodically during operator control
 	 */
 	@Override public void teleopPeriodic() {
-		drive.mecanumDrive_Cartesian(drivingStick.getX(), drivingStick.getY(),
-				drivingStick.getZ(), 0);
-		if (drivingStick.getTrigger())
-			toteGrabber.set(true);
-		// grab tote
-		else
-			toteGrabber.set(false);
+		SmartDashboard.putString("Autonomous State:", "Not");
+		SmartDashboard.putNumber("LS",limit.getValue());
+		SmartDashboard.putBoolean("Right IR:", rightIR.get());
+		SmartDashboard.putBoolean("Left IR:", leftIR.get());
+		
+		driveTest(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
+		
+		switch(drivingStick.getPOV(0))
+		{
+			case -1:
+				driveTest(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
+				break;
+			case 0:
+				driveTest(0,.5,0,0);
+				break;
+			case 45:
+				driveTest(.5,.5,0,0);
+				break;
+			case 90:
+				driveTest(.5,0,0,0);
+				break;
+			case 135:
+				driveTest(.5,-.5,0,0);
+				break;
+			case 180:
+				driveTest(0,-.5,0,0);
+				break;
+			case 225:
+				driveTest(-.5,-.5,0,0);
+				break;
+			case 270:
+				driveTest(-.5,0,0,0);
+				break;
+			case 315:
+				driveTest(-.5, .5, 0,0);
+				break;
+			
+		}
 		if(drivingStick.getRawButton(2))
 		{
 			elevator.set(1);
@@ -107,31 +160,43 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during test mode
 	 */
 	@Override public void testPeriodic() {
+			driveTest(0, .25, 0, 0);
+			Timer.delay(3);
+			driveTest(0,0,0,0);
+			Timer.delay(3);
 	}
 
 	/**
 	 * This function is used to retrieve a tote and activate the elevator system
+	 * @throws InterruptedException 
 	 */
-	public void grabTote() {
-		toteGrabber.set(true);
+	public void grabTote() throws InterruptedException {
+		elevator.set(1);
 		// grab tote
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		toteGrabber.set(false);
+		Timer.delay(2);
+		elevator.set(0);
 		// release tote
 		// elevate tote
 	}
-
-    /**
-    *  This function uses vision magic to check for a tote in front of the robot
-    */
-    public boolean seesTote(){
-        //vision magic
-        return true;
-    }
     
+	public boolean lineUp(double forwardSpeed)
+	{
+		if(!rightIR.get())
+		{
+			driveTest(.0625,forwardSpeed,0,0);
+			return false;
+		}
+		if(!leftIR.get())
+		{
+			driveTest(-.0625,forwardSpeed,0,0);
+			return false;
+		}
+		driveTest(forwardSpeed,0,0,0);
+		return true;
+	}
+	
+	public void driveTest(double x,double y,double rot,double dummy)
+	{
+		drive.mecanumDrive_Cartesian(-y,-x,rot,0);
+	}
 }
