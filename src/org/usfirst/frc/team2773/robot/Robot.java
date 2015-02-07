@@ -1,7 +1,9 @@
 package org.usfirst.frc.team2773.robot;
 
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Jaguar;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -29,9 +31,21 @@ public class Robot extends IterativeRobot {
 	Joystick drivingStick;
 	Jaguar elevator;
 	Timer timer;
+	/**
+	 * Inverted so they return false when they see something
+	 */
 	DigitalInput leftIR,rightIR;
-	AnalogInput limitL, limitR, sonar, encoder;
+	AnalogInput limitL, limitR, sonar;
+	Encoder encoder;
+	Thread elevatorThread;
+	Solenoid brake;
+	boolean buttonPushed=false;
+	int totesGrabbed = 0;
+	/** 
+	 * Increment this value by how long you want the elater to lift.
+	 */
 	double stopTime=0.0;
+	CameraServer camServer;
 
 	/**
 	 * This function is run when the robot is first started up and should be
@@ -43,11 +57,41 @@ public class Robot extends IterativeRobot {
 		drivingStick = new Joystick(0);
 		leftIR=new DigitalInput(0);
 		rightIR=new DigitalInput(1);
+		encoder=new Encoder(2,3);
 		timer = new Timer();
 		sonar=new AnalogInput(0);
-		encoder=new AnalogInput(1);
-		limitL=new AnalogInput(2);
+		limitL=new AnalogInput(1);
 		limitR=new AnalogInput(3);
+		brake=new Solenoid(0);
+		camServer=CameraServer.getInstance();
+		camServer.setQuality(50);
+		camServer.startAutomaticCapture("cam0");
+		elevatorThread=new Thread(new Runnable()
+		{
+			@Override public void run()
+			{
+				while(true)
+				{
+					if((isAutonomous()||isOperatorControl())&&stopTime>timer.get())
+					{
+							timer.start();
+							brake.set(false);
+							elevator.set(1);
+					}else
+					{
+						elevator.set(0);
+						brake.set(true);
+						timer.stop();
+						if(stopTime<timer.get())
+						{
+							timer.reset();
+							stopTime=0;
+						}
+					}
+				}
+			}
+		});
+		elevatorThread.start();
 	}
 	
 	@Override public void autonomousInit()
@@ -59,7 +103,6 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during autonomous
 	 */
 	@Override public void autonomousPeriodic() {
-		try{
 		// Grabs first and second tote, then moves to third tote position
 		for (int i = 0; i < 1; i++) {
 
@@ -74,23 +117,17 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putString("Autonomous State:", "//drive right quarter speed until rightIR");
 			driveTest(.5, 0, 0, 0);
 			while(rightIR.get());
-			SmartDashboard.putString("Autonomous State:", "//drives forward until limit pushed");
-			driveTest(0,.25, 0, 0);
-			while(limitL.getValue()<2000 || limitR.getValue()<2000);
 			SmartDashboard.putString("Autonomous State:", "line up");
-			lineUp(0);
+			lineUp();
 		}
 		// Grabs third tote and drives into auto zone
+		SmartDashboard.putString("Autonomous State:","Finishing");
 		grabTote();
 		driveTest(0, -1, 0, 0);
 		//Timer.delay(3);
 		driveTest(0, 0, 0, 0);
 		elevator.set(-1);
 		Timer.delay(6);
-		}catch(InterruptedException e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	@Override public void teleopInit()
@@ -107,6 +144,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("LimitR",limitR.getValue());
 		SmartDashboard.putBoolean("Right IR:", rightIR.get());
 		SmartDashboard.putBoolean("Left IR:", leftIR.get());
+		SmartDashboard.putNumber("Encoder",encoder.get());
 		//Sets the robot speed to the direction on the POV, or if none, sets to joystick value
 		switch(drivingStick.getPOV(0))
 		{
@@ -142,18 +180,14 @@ public class Robot extends IterativeRobot {
 		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
 		if(drivingStick.getRawButton(2))
 		{
-			elevator.set(1);
-			stopTime +=2;
-			timer.start();
-		}
-		//Checks if the robot has been lifting long enough and if it has stops lifting.
-		if(timer.get()>stopTime)
-		{
-			timer.stop();
-			elevator.set(0);
-			timer.reset();
-			stopTime = 0;
-		}
+			if(!buttonPushed)
+			{
+				grabTote();
+				timer.start();
+			}
+			buttonPushed=true;
+		}else
+			buttonPushed=false;
 	}
 
 	/**
@@ -170,47 +204,96 @@ public class Robot extends IterativeRobot {
 	 * This function is used to retrieve a tote and activate the elevator system
 	 * @throws InterruptedException 
 	 */
-	public void grabTote() throws InterruptedException {
-		elevator.set(1);
-		// grab tote
-		Timer.delay(2);
-		elevator.set(0);
-		// release tote
-		// elevate tote
+	public void grabTote() {
+		stopTime+=2;
+		totesGrabbed ++;
+	}
+	
+	public void dropTote(){
+		//TODO write method
 	}
     
-	public void lineUp(double forwardSpeed)
+	/**
+	 * This method moves the robot forward while lining up and rotates to be lined up. Only to be called once the IR sensors can see the 
+	 * tote.
+	 * @param forwardSpeed
+	 */
+	public void lineUp()
 	{
 		//strafes while advancing until tote is centered
-		while(!(rightIR.get() && leftIR.get()))
-		{
+		while(!limitL()&&!limitR())
 			if(!rightIR.get())
-				driveTest(.0625,forwardSpeed,0,0);
-			if(!leftIR.get())
-				driveTest(-.0625,forwardSpeed,0,0);
+			{
+				driveTest(.0625,.25,0,0);
+				SmartDashboard.putString("Line Up State:","Moving right and forward");
+			}
+			else if(!leftIR.get())
+			{
+				driveTest(-.0625,.25,0,0);
+				SmartDashboard.putString("Line Up State:","Moving left and forward");
+			}
+			else{
+				driveTest(0,.25,0,0);
+				SmartDashboard.putString("Line Up State:","Moving forward");
+			}
+		//executes until both IR see nothing and both limits switches are pressed.
+		while(!rightIR.get()||!leftIR.get()||!limitL()||!limitR())
+		{
+			while(!rightIR.get()||!leftIR.get())
+				if(!rightIR.get())
+				{
+					driveTest(.0625,0,0,0);
+					SmartDashboard.putString("Line Up State:","Moving right");
+				}
+				else if(!leftIR.get())
+				{
+					driveTest(-.0625,0,0,0);
+					SmartDashboard.putString("Line Up State:","Moving left");
+				}
+			while(!limitL()||!limitR())
+			{
+				if(!limitL())
+				{
+					driveTest(0,.1,.25,0);
+					SmartDashboard.putString("Line Up State:","Rotating clockwise");
+				}
+				if(!limitR())
+				{
+					driveTest(0,.1,-.25,0);
+					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
+				}
+			}
 		}
 		driveTest(0,0,0,0);
-		//turns and moves forward slightly until both limits are pressed
-		while(!(limitL.getValue()>2000 && limitR.getValue()>2000))
-		{
-			if(limitL.getValue()<2000)
-			{
-				driveTest(0,.1,.25,0);
-				Timer.delay(.5);
-				driveTest(0,0,0,0);
-			}
-			if(limitR.getValue()<2000)
-			{
-				driveTest(0,.1,-.25,0);
-				Timer.delay(.5);
-				driveTest(0,0,0,0);
-			}
-		}
 	}
 	
 	//Flips the driving to drive the practice bot because the wheels arn't on the right side.
 	public void driveTest(double x,double y,double rot,double dummy)
 	{
 		drive.mecanumDrive_Cartesian(-y,-x,rot,0);
+	}
+	
+	public boolean limitL()
+	{
+		if(limitL.getValue()>2000)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	public boolean limitR()
+	{
+		if(limitR.getValue()>2000)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }

@@ -8,5 +8,6 @@
 	</classpathentry>
 	<classpathentry kind="var" path="networktables" sourcepath="networktables.sources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="JAVA_HOME"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
