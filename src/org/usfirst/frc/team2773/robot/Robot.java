@@ -8,7 +8,6 @@ import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
@@ -67,16 +66,16 @@ public class Robot extends IterativeRobot {
 			SmartDashboard.putString("Autonomous State:", "grabbing tote");
 			grabTote();
 			SmartDashboard.putString("Autonomous State:", "//drive back");
-			driveTest(0,-.25,0,0);
-			Timer.delay(1);
+			driveTest(0,-.5,0,0);
+			Timer.delay(.5);
 			SmartDashboard.putString("Autonomous State:", "//drive right");
-			driveTest(.5, 0, 0, 0);
-			Timer.delay(1);
+			driveTest(.3, 0, 0, 0);
+			Timer.delay(.75);
 			SmartDashboard.putString("Autonomous State:", "//drive right quarter speed until rightIR");
-			driveTest(.25, 0, 0, 0);
+			driveTest(.5, 0, 0, 0);
 			while(rightIR.get());
 			SmartDashboard.putString("Autonomous State:", "//drives forward until limit pushed");
-			driveTest(0,.175, 0, 0);
+			driveTest(0,.25, 0, 0);
 			while(limitL.getValue()<2000 || limitR.getValue()<2000);
 			SmartDashboard.putString("Autonomous State:", "line up");
 			lineUp(0);
@@ -108,9 +107,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("LimitR",limitR.getValue());
 		SmartDashboard.putBoolean("Right IR:", rightIR.get());
 		SmartDashboard.putBoolean("Left IR:", leftIR.get());
-		
-		driveTest(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
-		
+		//Sets the robot speed to the direction on the POV, or if none, sets to joystick value
 		switch(drivingStick.getPOV(0))
 		{
 			case -1:
@@ -142,12 +139,14 @@ public class Robot extends IterativeRobot {
 				break;
 			
 		}
+		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
 		if(drivingStick.getRawButton(2))
 		{
 			elevator.set(1);
 			stopTime +=2;
 			timer.start();
 		}
+		//Checks if the robot has been lifting long enough and if it has stops lifting.
 		if(timer.get()>stopTime)
 		{
 			timer.stop();
@@ -209,6 +208,7 @@ public class Robot extends IterativeRobot {
 		}
 	}
 	
+	//Flips the driving to drive the practice bot because the wheels arn't on the right side.
 	public void driveTest(double x,double y,double rot,double dummy)
 	{
 		drive.mecanumDrive_Cartesian(-y,-x,rot,0);
