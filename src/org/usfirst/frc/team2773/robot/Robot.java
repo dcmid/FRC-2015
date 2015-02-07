@@ -140,8 +140,6 @@ public class Robot extends IterativeRobot {
 	 */
 	@Override public void teleopPeriodic() {
 		SmartDashboard.putString("Autonomous State:", "Not");
-		SmartDashboard.putNumber("LimitL",limitL.getValue());
-		SmartDashboard.putNumber("LimitR",limitR.getValue());
 		SmartDashboard.putBoolean("Right IR:", rightIR.get());
 		SmartDashboard.putBoolean("Left IR:", leftIR.get());
 		SmartDashboard.putNumber("Encoder",encoder.get());
@@ -252,15 +250,20 @@ public class Robot extends IterativeRobot {
 				}
 			while(!limitL()||!limitR())
 			{
+				SmartDashboard.putNumber("LimitL",limitL.getValue());
+				SmartDashboard.putNumber("LimitR",limitR.getValue());
 				if(!limitL())
 				{
 					driveTest(0,.1,.25,0);
 					SmartDashboard.putString("Line Up State:","Rotating clockwise");
-				}
-				if(!limitR())
+				}else if(!limitR())
 				{
 					driveTest(0,.1,-.25,0);
 					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
+				}else
+				{
+					driveTest(0,.1,0,0);
+					SmartDashboard.putString("Line Up State:","Drive forward");
 				}
 			}
 		}
@@ -278,7 +281,7 @@ public class Robot extends IterativeRobot {
 		if(limitL.getValue()>2000)
 		{
 			return true;
-		}
+		} 
 		else
 		{
 			return false;
@@ -287,7 +290,7 @@ public class Robot extends IterativeRobot {
 	
 	public boolean limitR()
 	{
-		if(limitR.getValue()>2000)
+		if(limitR.getValue()>700)
 		{
 			return true;
 		}
