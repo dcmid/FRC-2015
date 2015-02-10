@@ -36,7 +36,7 @@ public class Robot extends IterativeRobot {
 	 */
 	DigitalInput leftIR,rightIR;
 	AnalogInput limitL, limitR, sonar;
-	Encoder encoder;
+	Encoder elevatorEncoder;
 	Thread elevatorThread;
 	Solenoid brake;
 	boolean buttonPushed=false;
@@ -44,7 +44,7 @@ public class Robot extends IterativeRobot {
 	/** 
 	 * Increment this value by how long you want the elater to lift.
 	 */
-	double stopTime=0.0;
+	int stopCount=0;
 	CameraServer camServer;
 
 	/**
@@ -57,7 +57,7 @@ public class Robot extends IterativeRobot {
 		drivingStick = new Joystick(0);
 		leftIR=new DigitalInput(0);
 		rightIR=new DigitalInput(1);
-		encoder=new Encoder(2,3);
+		elevatorEncoder=new Encoder(2,3);
 		timer = new Timer();
 		sonar=new AnalogInput(0);
 		limitL=new AnalogInput(1);
@@ -72,20 +72,23 @@ public class Robot extends IterativeRobot {
 			{
 				while(true)
 				{
-					if((isAutonomous()||isOperatorControl())&&stopTime>timer.get())
+					if((isAutonomous()||isOperatorControl())&&stopCount>timer.get())
 					{
 							timer.start();
 							brake.set(false);
 							elevator.set(1);
 					}else
 					{
-						elevator.set(0);
-						brake.set(true);
+						if(stopCount==-1)
+						{
+							elevator.set(0);
+							brake.set(true);
+						}
 						timer.stop();
-						if(stopTime<timer.get())
+						if(stopCount<timer.get())
 						{
 							timer.reset();
-							stopTime=0;
+							stopCount=0;
 						}
 					}
 				}
@@ -126,7 +129,7 @@ public class Robot extends IterativeRobot {
 		driveTest(0, -1, 0, 0);
 		//Timer.delay(3);
 		driveTest(0, 0, 0, 0);
-		elevator.set(-1);
+		dropTotes();
 		Timer.delay(6);
 	}
 	
@@ -142,7 +145,7 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putString("Autonomous State:", "Not");
 		SmartDashboard.putBoolean("Right IR:", rightIR.get());
 		SmartDashboard.putBoolean("Left IR:", leftIR.get());
-		SmartDashboard.putNumber("Encoder",encoder.get());
+		SmartDashboard.putNumber("Encoder",elevatorEncoder.get());
 		//Sets the robot speed to the direction on the POV, or if none, sets to joystick value
 		switch(drivingStick.getPOV(0))
 		{
@@ -176,7 +179,11 @@ public class Robot extends IterativeRobot {
 			
 		}
 		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
-		if(drivingStick.getRawButton(2))
+		if(drivingStick.getRawButton(1))
+		{
+			dropTotes();
+		}
+		else if(drivingStick.getRawButton(2))
 		{
 			if(!buttonPushed)
 			{
@@ -203,12 +210,18 @@ public class Robot extends IterativeRobot {
 	 * @throws InterruptedException 
 	 */
 	public void grabTote() {
-		stopTime+=2;
+		stopCount+=2;
 		totesGrabbed ++;
 	}
 	
-	public void dropTote(){
-		//TODO write method
+	public void dropTotes()
+	{
+		driveTest(0,0,0,0);
+		stopCount = -1;
+		elevator.set(-1);
+		Timer.delay(2*totesGrabbed);
+		totesGrabbed = 0;
+		stopCount = 0;
 	}
     
 	/**
