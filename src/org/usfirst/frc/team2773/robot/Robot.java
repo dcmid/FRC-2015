@@ -39,6 +39,7 @@ public class Robot extends IterativeRobot {
 	Thread elevatorThread;
 	Solenoid brake;
 	Solenoid mast;
+	Solenoid container;
 	boolean buttonPushed=false;
 	int totesGrabbed = 0;
 	/** 
@@ -63,6 +64,7 @@ public class Robot extends IterativeRobot {
 		limitR=new AnalogInput(3);
 		brake=new Solenoid(0);
 		mast=new Solenoid(1);
+		container=new Solenoid(2);
 		camServer=CameraServer.getInstance();
 		camServer.setQuality(50);
 		camServer.startAutomaticCapture("cam0");
@@ -109,6 +111,7 @@ public class Robot extends IterativeRobot {
 
 			SmartDashboard.putString("Autonomous State:", "grabbing tote");
 			grabTote();
+			container.set(true);
 			SmartDashboard.putString("Autonomous State:", "//drive back");
 			driveTest(0,-.5,0,0);
 			Timer.delay(.5);
@@ -126,9 +129,11 @@ public class Robot extends IterativeRobot {
 		grabTote();
 		driveTest(0, -1, 0, 0);
 		//Timer.delay(3);
-		driveTest(0, 0, 0, 0);
 		dropTotes();
-		Timer.delay(6);
+		container.set(false);
+		driveTest(0, -.5, 0, 0);
+		Timer.delay(0.25);
+		driveTest(0,0,0,0);
 	}
 	
 	@Override public void teleopInit()
