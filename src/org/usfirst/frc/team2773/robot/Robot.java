@@ -30,7 +30,6 @@ public class Robot extends IterativeRobot {
 	RobotDrive drive;
 	Joystick drivingStick;
 	Jaguar elevator;
-	Timer timer;
 	/**
 	 * Inverted so they return false when they see something
 	 */
@@ -39,6 +38,7 @@ public class Robot extends IterativeRobot {
 	Encoder elevatorEncoder;
 	Thread elevatorThread;
 	Solenoid brake;
+	Solenoid mast;
 	boolean buttonPushed=false;
 	int totesGrabbed = 0;
 	/** 
@@ -58,11 +58,11 @@ public class Robot extends IterativeRobot {
 		leftIR=new DigitalInput(0);
 		rightIR=new DigitalInput(1);
 		elevatorEncoder=new Encoder(2,3);
-		timer = new Timer();
 		sonar=new AnalogInput(0);
 		limitL=new AnalogInput(1);
 		limitR=new AnalogInput(3);
 		brake=new Solenoid(0);
+		mast=new Solenoid(1);
 		camServer=CameraServer.getInstance();
 		camServer.setQuality(50);
 		camServer.startAutomaticCapture("cam0");
@@ -72,9 +72,8 @@ public class Robot extends IterativeRobot {
 			{
 				while(true)
 				{
-					if((isAutonomous()||isOperatorControl())&&stopCount>timer.get())
+					if((isAutonomous()||isOperatorControl())&&stopCount>elevatorEncoder.get())
 					{
-							timer.start();
 							brake.set(false);
 							elevator.set(1);
 					}else
@@ -84,10 +83,9 @@ public class Robot extends IterativeRobot {
 							elevator.set(0);
 							brake.set(true);
 						}
-						timer.stop();
-						if(stopCount<timer.get())
+						if(stopCount<elevatorEncoder.get())
 						{
-							timer.reset();
+							elevatorEncoder.reset();
 							stopCount=0;
 						}
 					}
@@ -188,7 +186,6 @@ public class Robot extends IterativeRobot {
 			if(!buttonPushed)
 			{
 				grabTote();
-				timer.start();
 			}
 			buttonPushed=true;
 		}else
@@ -210,13 +207,16 @@ public class Robot extends IterativeRobot {
 	 * @throws InterruptedException 
 	 */
 	public void grabTote() {
-		stopCount+=2;
+		stopCount+=200;
 		totesGrabbed ++;
+		if(totesGrabbed>3)
+			mast.set(true);
 	}
 	
 	public void dropTotes()
 	{
 		driveTest(0,0,0,0);
+		mast.set(false); 
 		stopCount = -1;
 		elevator.set(-1);
 		Timer.delay(2*totesGrabbed);
