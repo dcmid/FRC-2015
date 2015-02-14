@@ -186,6 +186,12 @@ public class Robot extends IterativeRobot {
 			buttonPushed=true;
 		}else
 			buttonPushed=false;
+		if(drivingStick.getRawButton(3))
+			elevator.set(-1);
+		else if(drivingStick.getRawButton(5))
+			elevator.set(1);
+		else if(elevator.get()!=0)
+			elevator.set(0);
 	}
 
 	/**
@@ -240,12 +246,12 @@ public class Robot extends IterativeRobot {
 			while(!rightIR.get()||!leftIR.get())
 				if(!rightIR.get())
 				{
-					driveTest(.0625,0,0,0);
+					driveTest(.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving right");
 				}
 				else if(!leftIR.get())
 				{
-					driveTest(-.0625,0,0,0);
+					driveTest(-.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving left");
 				}
 			while(!limitL()||!limitR())
@@ -254,11 +260,11 @@ public class Robot extends IterativeRobot {
 				SmartDashboard.putNumber("LimitR",limitR.getValue());
 				if(!limitL())
 				{
-					driveTest(0,.1,.25,0);
+					driveTest(0,.1,.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating clockwise");
 				}else if(!limitR())
 				{
-					driveTest(0,.1,-.25,0);
+					driveTest(0,.1,-.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
 				}else
 				{
