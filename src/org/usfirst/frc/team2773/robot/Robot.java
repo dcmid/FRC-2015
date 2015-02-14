@@ -74,23 +74,31 @@ public class Robot extends IterativeRobot {
 			{
 				while(true)
 				{
-					if((isAutonomous()||isOperatorControl())&&stopCount>elevatorEncoder.get())
-					{
-							brake.set(false);
-							elevator.set(1);
-					}else
-					{
-						if(stopCount==-1)
+					if(isAutonomous()||isOperatorControl())
+						if(stopCount>elevatorEncoder.get())
 						{
-							elevator.set(0);
-							brake.set(true);
-						}
-						if(stopCount<elevatorEncoder.get())
+								brake.set(false);
+								elevator.set(1);
+								SmartDashboard.putString("Elevator State:","Lifting");
+						}else
 						{
+							if(stopCount!=-1)
+							{
+								elevator.set(0);
+								brake.set(true);
+								stopCount=0;
+								SmartDashboard.putString("Elevator State:","Stopped");
+							}else
+								SmartDashboard.putString("Elevator State:","Dropping");
 							elevatorEncoder.reset();
-							stopCount=0;
 						}
+					else
+					{
+						elevator.set(0);
+						brake.set(true);
+						SmartDashboard.putString("Elevator State:","Inactive");
 					}
+					Timer.delay(.01);
 				}
 			}
 		});
@@ -113,13 +121,13 @@ public class Robot extends IterativeRobot {
 			grabTote();
 			container.set(true);
 			SmartDashboard.putString("Autonomous State:", "//drive back");
-			driveTest(0,-.5,0,0);
+			drive(0,-.5,0,0);
 			Timer.delay(.5);
 			SmartDashboard.putString("Autonomous State:", "//drive right");
-			driveTest(.3, 0, 0, 0);
+			drive(.3, 0, 0, 0);
 			Timer.delay(.75);
 			SmartDashboard.putString("Autonomous State:", "//drive right quarter speed until rightIR");
-			driveTest(.5, 0, 0, 0);
+			drive(.5, 0, 0, 0);
 			while(rightIR.get());
 			SmartDashboard.putString("Autonomous State:", "line up");
 			lineUp();
@@ -127,13 +135,13 @@ public class Robot extends IterativeRobot {
 		// Grabs third tote and drives into auto zone
 		SmartDashboard.putString("Autonomous State:","Finishing");
 		grabTote();
-		driveTest(0, -1, 0, 0);
+		drive(0, -1, 0, 0);
 		//Timer.delay(3);
 		dropTotes();
 		container.set(false);
-		driveTest(0, -.5, 0, 0);
+		drive(0, -.5, 0, 0);
 		Timer.delay(0.25);
-		driveTest(0,0,0,0);
+		drive(0,0,0,0);
 	}
 	
 	@Override public void teleopInit()
@@ -153,31 +161,31 @@ public class Robot extends IterativeRobot {
 		switch(drivingStick.getPOV(0))
 		{
 			case -1:
-				driveTest(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
+				drive(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
 				break;
 			case 0:
-				driveTest(0,.5,0,0);
+				drive(0,.5,0,0);
 				break;
 			case 45:
-				driveTest(.5,.5,0,0);
+				drive(.5,.5,0,0);
 				break;
 			case 90:
-				driveTest(.5,0,0,0);
+				drive(.5,0,0,0);
 				break;
 			case 135:
-				driveTest(.5,-.5,0,0);
+				drive(.5,-.5,0,0);
 				break;
 			case 180:
-				driveTest(0,-.5,0,0);
+				drive(0,-.5,0,0);
 				break;
 			case 225:
-				driveTest(-.5,-.5,0,0);
+				drive(-.5,-.5,0,0);
 				break;
 			case 270:
-				driveTest(-.5,0,0,0);
+				drive(-.5,0,0,0);
 				break;
 			case 315:
-				driveTest(-.5, .5, 0,0);
+				drive(-.5, .5, 0,0);
 				break;
 			
 		}
@@ -201,9 +209,9 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during test mode
 	 */
 	@Override public void testPeriodic() {
-			driveTest(0, .25, 0, 0);
+			drive(0, .25, 0, 0);
 			Timer.delay(3);
-			driveTest(0,0,0,0);
+			drive(0,0,0,0);
 			Timer.delay(3);
 	}
 
@@ -220,7 +228,7 @@ public class Robot extends IterativeRobot {
 	
 	public void dropTotes()
 	{
-		driveTest(0,0,0,0);
+		drive(0,0,0,0);
 		mast.set(false); 
 		stopCount = -1;
 		elevator.set(-1);
@@ -240,16 +248,16 @@ public class Robot extends IterativeRobot {
 		while(!limitL()&&!limitR())
 			if(!rightIR.get())
 			{
-				driveTest(.0625,.25,0,0);
+				drive(.0625,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving right and forward");
 			}
 			else if(!leftIR.get())
 			{
-				driveTest(-.0625,.25,0,0);
+				drive(-.0625,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving left and forward");
 			}
 			else{
-				driveTest(0,.25,0,0);
+				drive(0,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving forward");
 			}
 		//executes until both IR see nothing and both limits switches are pressed.
@@ -258,12 +266,12 @@ public class Robot extends IterativeRobot {
 			while(!rightIR.get()||!leftIR.get())
 				if(!rightIR.get())
 				{
-					driveTest(.0625,0,0,0);
+					drive(.0625,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving right");
 				}
 				else if(!leftIR.get())
 				{
-					driveTest(-.0625,0,0,0);
+					drive(-.0625,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving left");
 				}
 			while(!limitL()||!limitR())
@@ -272,24 +280,24 @@ public class Robot extends IterativeRobot {
 				SmartDashboard.putNumber("LimitR",limitR.getValue());
 				if(!limitL())
 				{
-					driveTest(0,.1,.25,0);
+					drive(0,.1,.25,0);
 					SmartDashboard.putString("Line Up State:","Rotating clockwise");
 				}else if(!limitR())
 				{
-					driveTest(0,.1,-.25,0);
+					drive(0,.1,-.25,0);
 					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
 				}else
 				{
-					driveTest(0,.1,0,0);
+					drive(0,.1,0,0);
 					SmartDashboard.putString("Line Up State:","Drive forward");
 				}
 			}
 		}
-		driveTest(0,0,0,0);
+		drive(0,0,0,0);
 	}
 	
 	//Flips the driving to drive the practice bot because the wheels arn't on the right side.
-	public void driveTest(double x,double y,double rot,double dummy)
+	public void drive(double x,double y,double rot,double dummy)
 	{
 		drive.mecanumDrive_Cartesian(-y,-x,rot,0);
 	}
