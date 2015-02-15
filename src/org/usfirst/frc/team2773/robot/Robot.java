@@ -193,7 +193,7 @@ public class Robot extends IterativeRobot {
 				break;
 			
 		}
-		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
+		//If the driver has pressed the elevator button, run grabTote.
 		if(drivingStick.getRawButton(1))
 		{
 			dropTotes();
@@ -207,12 +207,6 @@ public class Robot extends IterativeRobot {
 			buttonPushed=true;
 		}else
 			buttonPushed=false;
-		if(drivingStick.getRawButton(3))
-			elevator.set(-1);
-		else if(drivingStick.getRawButton(5))
-			elevator.set(1);
-		else if(elevator.get()!=0)
-			elevator.set(0);
 	}
 
 	/**
