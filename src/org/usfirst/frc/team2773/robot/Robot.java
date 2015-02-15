@@ -30,21 +30,22 @@ public class Robot extends IterativeRobot {
 	RobotDrive drive;
 	Joystick drivingStick;
 	Jaguar elevator;
-	Timer timer;
 	/**
 	 * Inverted so they return false when they see something
 	 */
 	DigitalInput leftIR,rightIR;
 	AnalogInput limitL, limitR, sonar;
-	Encoder encoder;
+	Encoder elevatorEncoder;
 	Thread elevatorThread;
 	Solenoid brake;
+	Solenoid mast;
+	Solenoid container;
 	boolean buttonPushed=false;
 	int totesGrabbed = 0;
 	/** 
 	 * Increment this value by how long you want the elater to lift.
 	 */
-	double stopTime=0.0;
+	int stopCount=0;
 	CameraServer camServer;
 
 	/**
@@ -57,12 +58,13 @@ public class Robot extends IterativeRobot {
 		drivingStick = new Joystick(0);
 		leftIR=new DigitalInput(0);
 		rightIR=new DigitalInput(1);
-		encoder=new Encoder(2,3);
-		timer = new Timer();
+		elevatorEncoder=new Encoder(2,3);
 		sonar=new AnalogInput(0);
 		limitL=new AnalogInput(1);
 		limitR=new AnalogInput(3);
 		brake=new Solenoid(0);
+		mast=new Solenoid(1);
+		container=new Solenoid(2);
 		camServer=CameraServer.getInstance();
 		camServer.setQuality(50);
 		camServer.startAutomaticCapture("cam0");
@@ -72,22 +74,36 @@ public class Robot extends IterativeRobot {
 			{
 				while(true)
 				{
-					if((isAutonomous()||isOperatorControl())&&stopTime>timer.get())
+					if(isAutonomous()||isOperatorControl())
 					{
-							timer.start();
+						//drive elevator up if stopCount is greater than current encoder value
+						if(stopCount>elevatorEncoder.get())
+						{
 							brake.set(false);
 							elevator.set(1);
-					}else
+							SmartDashboard.putString("Elevator State:","Lifting");
+						}
+						//drive elevator down if stopCount is more than 10 less than current value
+						else if(stopCount-elevatorEncoder.get()<-10)
+						{
+							SmartDashboard.putString("Elevator State", "Dropping");
+							brake.set(false);
+							elevator.set(-1);
+						}
+						else
+						{
+							elevator.set(0);
+							brake.set(true);
+							SmartDashboard.putString("Elevator State:","Stopped");
+						}
+					}
+					else
 					{
 						elevator.set(0);
 						brake.set(true);
-						timer.stop();
-						if(stopTime<timer.get())
-						{
-							timer.reset();
-							stopTime=0;
-						}
+						SmartDashboard.putString("Elevator State:","Inactive");
 					}
+					Timer.delay(.01);
 				}
 			}
 		});
@@ -105,17 +121,17 @@ public class Robot extends IterativeRobot {
 	@Override public void autonomousPeriodic() {
 		// Grabs first and second tote, then moves to third tote position
 		for (int i = 0; i < 1; i++) {
-
 			SmartDashboard.putString("Autonomous State:", "grabbing tote");
 			grabTote();
+			container.set(true);
 			SmartDashboard.putString("Autonomous State:", "//drive back");
-			driveTest(0,-.5,0,0);
+			drive(0,-.5,0,0);
 			Timer.delay(.5);
 			SmartDashboard.putString("Autonomous State:", "//drive right");
-			driveTest(.3, 0, 0, 0);
+			drive(.3, 0, 0, 0);
 			Timer.delay(.75);
 			SmartDashboard.putString("Autonomous State:", "//drive right quarter speed until rightIR");
-			driveTest(.5, 0, 0, 0);
+			drive(.5, 0, 0, 0);
 			while(rightIR.get());
 			SmartDashboard.putString("Autonomous State:", "line up");
 			lineUp();
@@ -123,11 +139,13 @@ public class Robot extends IterativeRobot {
 		// Grabs third tote and drives into auto zone
 		SmartDashboard.putString("Autonomous State:","Finishing");
 		grabTote();
-		driveTest(0, -1, 0, 0);
+		drive(0, -1, 0, 0);
 		//Timer.delay(3);
-		driveTest(0, 0, 0, 0);
-		elevator.set(-1);
-		Timer.delay(6);
+		dropTotes();
+		container.set(false);
+		drive(0, -.5, 0, 0);
+		Timer.delay(0.25);
+		drive(0,0,0,0);
 	}
 	
 	@Override public void teleopInit()
@@ -142,46 +160,49 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putString("Autonomous State:", "Not");
 		SmartDashboard.putBoolean("Right IR:", rightIR.get());
 		SmartDashboard.putBoolean("Left IR:", leftIR.get());
-		SmartDashboard.putNumber("Encoder",encoder.get());
+		SmartDashboard.putNumber("Encoder",elevatorEncoder.get());
 		//Sets the robot speed to the direction on the POV, or if none, sets to joystick value
 		switch(drivingStick.getPOV(0))
 		{
 			case -1:
-				driveTest(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
+				drive(drivingStick.getX(), -drivingStick.getY(), drivingStick.getZ()*.25, 0);
 				break;
 			case 0:
-				driveTest(0,.5,0,0);
+				drive(0,.5,0,0);
 				break;
 			case 45:
-				driveTest(.5,.5,0,0);
+				drive(.5,.5,0,0);
 				break;
 			case 90:
-				driveTest(.5,0,0,0);
+				drive(.5,0,0,0);
 				break;
 			case 135:
-				driveTest(.5,-.5,0,0);
+				drive(.5,-.5,0,0);
 				break;
 			case 180:
-				driveTest(0,-.5,0,0);
+				drive(0,-.5,0,0);
 				break;
 			case 225:
-				driveTest(-.5,-.5,0,0);
+				drive(-.5,-.5,0,0);
 				break;
 			case 270:
-				driveTest(-.5,0,0,0);
+				drive(-.5,0,0,0);
 				break;
 			case 315:
-				driveTest(-.5, .5, 0,0);
+				drive(-.5, .5, 0,0);
 				break;
 			
 		}
 		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
-		if(drivingStick.getRawButton(2))
+		if(drivingStick.getRawButton(1))
+		{
+			dropTotes();
+		}
+		else if(drivingStick.getRawButton(2))
 		{
 			if(!buttonPushed)
 			{
 				grabTote();
-				timer.start();
 			}
 			buttonPushed=true;
 		}else
@@ -198,9 +219,9 @@ public class Robot extends IterativeRobot {
 	 * This function is called periodically during test mode
 	 */
 	@Override public void testPeriodic() {
-			driveTest(0, .25, 0, 0);
+			drive(0, .25, 0, 0);
 			Timer.delay(3);
-			driveTest(0,0,0,0);
+			drive(0,0,0,0);
 			Timer.delay(3);
 	}
 
@@ -209,12 +230,23 @@ public class Robot extends IterativeRobot {
 	 * @throws InterruptedException 
 	 */
 	public void grabTote() {
-		stopTime+=2;
+		stopCount+=200;
 		totesGrabbed ++;
+		if(totesGrabbed>3)
+			mast.set(true);
 	}
 	
-	public void dropTote(){
-		//TODO write method
+	public void dropTotes()
+	{
+		//stop robot
+		drive(0,0,0,0);
+		mast.set(false);
+		//lower elevator part way. allow 3 seconds to back off totes
+		stopCount-=50;
+		Timer.delay(3);
+		//lower elevator to base
+		stopCount=0;
+		totesGrabbed = 0;
 	}
     
 	/**
@@ -228,16 +260,16 @@ public class Robot extends IterativeRobot {
 		while(!limitL()&&!limitR())
 			if(!rightIR.get())
 			{
-				driveTest(.0625,.25,0,0);
+				drive(.0625,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving right and forward");
 			}
 			else if(!leftIR.get())
 			{
-				driveTest(-.0625,.25,0,0);
+				drive(-.0625,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving left and forward");
 			}
 			else{
-				driveTest(0,.25,0,0);
+				drive(0,.25,0,0);
 				SmartDashboard.putString("Line Up State:","Moving forward");
 			}
 		//executes until both IR see nothing and both limits switches are pressed.
@@ -246,12 +278,12 @@ public class Robot extends IterativeRobot {
 			while(!rightIR.get()||!leftIR.get())
 				if(!rightIR.get())
 				{
-					driveTest(.125,0,0,0);
+					drive(.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving right");
 				}
 				else if(!leftIR.get())
 				{
-					driveTest(-.125,0,0,0);
+					drive(-.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving left");
 				}
 			while(!limitL()||!limitR())
@@ -260,24 +292,24 @@ public class Robot extends IterativeRobot {
 				SmartDashboard.putNumber("LimitR",limitR.getValue());
 				if(!limitL())
 				{
-					driveTest(0,.1,.125,0);
+					drive(0,.1,.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating clockwise");
 				}else if(!limitR())
 				{
-					driveTest(0,.1,-.125,0);
+					drive(0,.1,-.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
 				}else
 				{
-					driveTest(0,.1,0,0);
+					drive(0,.1,0,0);
 					SmartDashboard.putString("Line Up State:","Drive forward");
 				}
 			}
 		}
-		driveTest(0,0,0,0);
+		drive(0,0,0,0);
 	}
 	
 	//Flips the driving to drive the practice bot because the wheels arn't on the right side.
-	public void driveTest(double x,double y,double rot,double dummy)
+	public void drive(double x,double y,double rot,double dummy)
 	{
 		drive.mecanumDrive_Cartesian(-y,-x,rot,0);
 	}
