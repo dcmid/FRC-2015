@@ -241,9 +241,12 @@ public class Robot extends IterativeRobot {
 		//stop robot
 		drive(0,0,0,0);
 		mast.set(false);
-		//lower elevator part way. allow 3 seconds to back off totes
+		//lower elevator part way
 		stopCount-=50;
-		Timer.delay(3);
+		Timer.delay(1);
+		drive(0,-.5,0,0);
+		Timer.delay(1);
+		drive(0,0,0,0);
 		//lower elevator to base
 		stopCount=0;
 		totesGrabbed = 0;
