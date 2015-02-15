@@ -75,23 +75,28 @@ public class Robot extends IterativeRobot {
 				while(true)
 				{
 					if(isAutonomous()||isOperatorControl())
+					{
+						//drive elevator up if stopCount is greater than current encoder value
 						if(stopCount>elevatorEncoder.get())
 						{
-								brake.set(false);
-								elevator.set(1);
-								SmartDashboard.putString("Elevator State:","Lifting");
-						}else
-						{
-							if(stopCount!=-1)
-							{
-								elevator.set(0);
-								brake.set(true);
-								stopCount=0;
-								SmartDashboard.putString("Elevator State:","Stopped");
-							}else
-								SmartDashboard.putString("Elevator State:","Dropping");
-							elevatorEncoder.reset();
+							brake.set(false);
+							elevator.set(1);
+							SmartDashboard.putString("Elevator State:","Lifting");
 						}
+						//drive elevator down if stopCount is more than 10 less than current value
+						else if(stopCount-elevatorEncoder.get()<-10)
+						{
+							SmartDashboard.putString("Elevator State", "Dropping");
+							brake.set(false);
+							elevator.set(-1);
+						}
+						else
+						{
+							elevator.set(0);
+							brake.set(true);
+							SmartDashboard.putString("Elevator State:","Stopped");
+						}
+					}
 					else
 					{
 						elevator.set(0);
@@ -116,7 +121,6 @@ public class Robot extends IterativeRobot {
 	@Override public void autonomousPeriodic() {
 		// Grabs first and second tote, then moves to third tote position
 		for (int i = 0; i < 1; i++) {
-
 			SmartDashboard.putString("Autonomous State:", "grabbing tote");
 			grabTote();
 			container.set(true);
@@ -189,7 +193,7 @@ public class Robot extends IterativeRobot {
 				break;
 			
 		}
-		//If the driver has pressed the elevator button, add 2 seconds to time to lift.
+		//If the driver has pressed the elevator button, run grabTote.
 		if(drivingStick.getRawButton(1))
 		{
 			dropTotes();
@@ -228,13 +232,18 @@ public class Robot extends IterativeRobot {
 	
 	public void dropTotes()
 	{
+		//stop robot
 		drive(0,0,0,0);
-		mast.set(false); 
-		stopCount = -1;
-		elevator.set(-1);
-		Timer.delay(2*totesGrabbed);
+		mast.set(false);
+		//lower elevator part way
+		stopCount-=50;
+		Timer.delay(1);
+		drive(0,-.5,0,0);
+		Timer.delay(1);
+		drive(0,0,0,0);
+		//lower elevator to base
+		stopCount=0;
 		totesGrabbed = 0;
-		stopCount = 0;
 	}
     
 	/**
@@ -266,12 +275,12 @@ public class Robot extends IterativeRobot {
 			while(!rightIR.get()||!leftIR.get())
 				if(!rightIR.get())
 				{
-					drive(.0625,0,0,0);
+					drive(.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving right");
 				}
 				else if(!leftIR.get())
 				{
-					drive(-.0625,0,0,0);
+					drive(-.125,0,0,0);
 					SmartDashboard.putString("Line Up State:","Moving left");
 				}
 			while(!limitL()||!limitR())
@@ -280,11 +289,11 @@ public class Robot extends IterativeRobot {
 				SmartDashboard.putNumber("LimitR",limitR.getValue());
 				if(!limitL())
 				{
-					drive(0,.1,.25,0);
+					drive(0,.1,.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating clockwise");
 				}else if(!limitR())
 				{
-					drive(0,.1,-.25,0);
+					drive(0,.1,-.125,0);
 					SmartDashboard.putString("Line Up State:","Rotating counterclockwise");
 				}else
 				{
